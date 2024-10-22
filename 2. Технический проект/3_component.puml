@@ -1,0 +1,130 @@
+@startuml API. Диаграмма компонентов
+title "C4. Компоненты"
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+!$ICONURL = "https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v3.0.0/icons"
+!include $ICONURL/common.puml
+!include $ICONURL/devicons/react.puml
+!include $ICONURL/devicons/php.puml
+!include $ICONURL/devicons2/sqlite.puml
+
+Component(front, "Веб интерфэйс", "SPA на ReactJS", $sprite="react")
+
+System_Boundary(libAcc, "API") {
+
+  Component(RegisterController, "RegisterController", "PHP", "Регистрация в системе")
+  Rel(front,RegisterController, "")
+  Component(RegisterService, "RegisterService", "PHP")
+  Rel(RegisterController,RegisterService, "")
+  Component(UserRepository, "UserRepository", "PHP")
+  Rel(RegisterService,UserRepository, "")
+  Component(ReaderRepository, "ReaderRepository", "PHP")
+  Rel(RegisterService,ReaderRepository, "")
+
+
+  Component(AuthController, "AuthController", "PHP", "Авторизация в системе")
+  Rel(front,AuthController, "")
+  Component(AuthService, "AuthService", "PHP")
+  Rel(AuthController,AuthService, "")
+  Rel(AuthService,UserRepository, "")
+  Component(UserActivityRepository, "UserActivityRepository", "PHP")
+  Rel(AuthService,UserActivityRepository, "")
+
+
+  Component(ConfirmEmailController, "ConfirmEmailController", "PHP", "Подтверждение email")
+  Rel(front,ConfirmEmailController, "")
+  Component(ConfirmEmailService, "ConfirmEmailService", "PHP")
+  Rel(ConfirmEmailController,ConfirmEmailService, "")
+  Rel(ConfirmEmailService,UserRepository, "")
+
+
+  Component(BookingController, "BookingController", "PHP", "Бронирование книг")
+  Rel(front,BookingController, "")
+  Component(BookingService, "BookingService", "PHP")
+  Rel(BookingController,BookingService, "")
+  Component(BookRepository, "BookRepository", "PHP")
+  Rel(BookingService,BookRepository, "")
+  Component(BookingRepository, "BookingRepository", "PHP")
+  Rel(BookingService,BookingRepository, "")
+
+
+  Component(ReaderInfoController, "ReaderInfoController", "PHP", "Информация о читателях")
+  Rel(front,ReaderInfoController, "")
+  Component(ReaderInfoService, "ReaderInfoService", "PHP")
+  Rel(ReaderInfoController,ReaderInfoService, "")
+  Rel(ReaderInfoService,UserActivityRepository, "")
+
+
+  Component(ReaderIDController, "ReaderIDController", "PHP", "Идентификация и подтверждение личности")
+  Rel(front,ReaderIDController, "")
+  Component(ReaderIDService, "ReaderIDService", "PHP")
+  Rel(ReaderIDController,ReaderIDService, "")
+  Rel(ReaderIDService,UserActivityRepository, "")
+  Rel(ReaderIDService,ReaderRepository, "")
+
+
+
+  Component(LeaseController, "LeaseController", "PHP", "Выдача и возврат книг, выписка штрафов")
+  Rel(front,LeaseController, "")
+  Component(LeaseService, "LeaseService", "PHP")
+  Rel(LeaseController,LeaseService, "")
+  Component(LeaseRepository, "LeaseRepository", "PHP")
+  Rel(LeaseService,LeaseRepository, "")
+  Component(FineRepository, "FineRepository", "PHP")
+  Rel(LeaseService,FineRepository, "")
+  Rel(LeaseService,BookingRepository, "")
+  Component(SettingsRepository, "SettingsRepository", "PHP")
+  Rel(LeaseService,SettingsRepository, "")
+  
+
+  Component(FineController, "FineController", "PHP", "Просмотр и погашение штрафов")
+  Rel(front,FineController, "")
+  Component(FineService, "FineService", "PHP")
+  Rel(FineController,FineService, "")
+  Rel(FineService,FineRepository, "")
+
+
+  Component(UserController, "UserController", "PHP", "Управление пользователями")
+  Rel(front,UserController, "")
+  Component(UserService, "UserService", "PHP")
+  Rel(UserController,UserService, "")
+  Rel(UserService,UserRepository, "")
+
+
+  Component(SettingsController, "SettingsController", "PHP", "Управление настроками системы")
+  Rel(front,SettingsController, "")
+  Component(SettingsService, "SettingsService", "PHP")
+  Rel(SettingsController,SettingsService, "")  
+  Rel(SettingsService,SettingsRepository, "")
+
+
+  Component(StatisticsController, "StatisticsController", "PHP", "Получение статистики")
+  Rel(front,StatisticsController, "")
+  Component(StatisticsService, "StatisticsService", "PHP")
+  Rel(StatisticsController,StatisticsService, "")
+  Rel(StatisticsService,UserActivityRepository, "")
+  Rel(StatisticsService,LeaseRepository, "")
+
+
+  Component(NotificationController, "NotificationController", "PHP", "Утправка уведомлений")
+  Component(NotificationService, "StatisticsService", "PHP")
+  Rel(NotificationController,NotificationService, "")
+  Rel(NotificationService,LeaseRepository, "")
+  Rel(NotificationService,SettingsRepository, "")
+}
+
+Component_Ext(DBMS, "DBMS", "SQLite")
+Rel(UserRepository, DBMS, "")
+Rel(ReaderRepository, DBMS, "")
+Rel(UserActivityRepository, DBMS, "")
+Rel(BookRepository, DBMS, "")
+Rel(BookingRepository, DBMS, "")
+Rel(LeaseRepository, DBMS, "")
+Rel(FineRepository, DBMS, "")
+Rel(SettingsRepository, DBMS, "")
+
+System_Ext(email, "Email сервис", "отправка уведомлений")
+Rel(RegisterService, email, "Отправка email для подтверждения", "SMTP + TLS")
+Rel(NotificationService, email, "Отправка уведомлений", "SMTP + TLS")
+
+@enduml

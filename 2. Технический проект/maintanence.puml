@@ -1,0 +1,41 @@
+@startuml истема учета библиотеки. Maintenance
+
+'left to right direction	
+top to bottom direction
+
+package "Development" {
+    [Developer]
+    [Code VCS]
+    [Developer] --> [Code VCS]: "commit" 
+
+    [CI]
+    [Code VCS] --> [CI]: "test & build"
+
+    [CD]
+    [CI] --> [CD]
+    [CI] --> [Code VCS]: "merge to master"
+}
+
+
+package "Docker compose" {  
+    [Docker]
+    [Containers] 
+}
+[Docker] --> [Code VCS]: "pull main"
+[Docker] --> [Containers]: "build and deploy" 
+[CD] --> [Docker]: "deploy" 
+
+package "External Services" {
+    [Mailing Service]
+}
+
+package "Monitoring and backup" {
+    [Zabbix]
+    [Zabbix] --> [Containers]: "check status" 
+    [Zabbix] --> [Mailing Service]: "sends notifications" 
+    [backup service]
+    [backup service] --> [Containers]: "create backups" 
+}
+
+
+@enduml

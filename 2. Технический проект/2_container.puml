@@ -1,0 +1,40 @@
+@startuml Диаграмма контейнеров
+title "C4. Контейнеры"
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!$ICONURL = "https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v3.0.0/icons"
+!include $ICONURL/common.puml
+!include $ICONURL/devicons/react.puml
+!include $ICONURL/devicons/php.puml
+!include $ICONURL/devicons2/sqlite.puml
+
+Person(reader, "Читатель", "Просматр каталога и поиск в нем книг, бронирование книги")
+Person(librarin, "Библиотекарь", "Учет новых поступлений книг, выдача книг читателям, прием возвращенных книг, учет штрафов за просроченный возврат")
+Person(admin, "Администратор", "Управление учетными записями пользователей, настройка системы, анализ данных о посещениях и выданных книгах.")
+
+System_Boundary(libAcc, "Система учета библиотеки") {
+    Container(front, "Веб интерфэйс", "SPA на ReactJS", $sprite="react")
+    Rel(reader, front, "Посещает", "HTTP/TCP")
+    Rel(librarin, front, "Посещает", "HTTP/TCP")
+    Rel(admin, front, "Посещает", "HTTP/TCP")
+
+    Container(backend, "API", "PHP 8.2", $sprite="php")
+    Rel(front, backend, "API вызовы", "HTTPS/REST")
+
+    Container(db, "БД", "SQLite", $sprite="sqlite")
+    Rel(backend, db, "Чтение/запись", "SQL")
+
+    Container(monitor, "Сервис мониторинга","Zabbix")
+    Rel(monitor, backend, "Проверяет состояние", "TCP")
+
+    Container(backup, "Сервис резервного копирования","SQLite .backup")
+    Rel(backup, db, "Создает бэкапы", "TCP")
+}
+
+System_Ext(email, "Email сервис", "отправка уведомлений")
+Rel(monitor, email, "Уведомления администратору об ошибках", "SMTP + TLS")
+Rel(backend, email, "Уведомления читателям об истечении сроков", "SMTP + TLS")
+Rel(email, reader, "Уведомления читателям об истечении сроков", "SMTP + TLS")
+Rel(email, admin, "Уведомления администратору об ошибках", "SMTP + TLS")
+
+@enduml

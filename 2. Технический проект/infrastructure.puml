@@ -1,0 +1,43 @@
+@startuml Система учета библиотеки. Диаграмма infrastructure
+' C4
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+'
+title "Система учета библиотеки. Диаграмма инфраструктуры"
+
+'
+Person(user, "Пользователь")
+
+package "Основной сервер" { 
+    Container(zabbixAgent, "Мониторинг", "Zabbix-агент", "")  
+
+    package "Doker-compose" { 
+        package "Doker-контейнер front" {  
+            Container(spaFront, "Front spa", "React", "")  
+        }
+
+        package "Doker-контейнер back" { 
+            Container(back, "api aplication ", "php", "")
+            Container(db, "Database", "SQLite")
+        }
+    }
+}
+
+package "Вспомогательный сервер" { 
+    Container(zabbixServ, "Мониторинг", "Zabbix-сервер", "")  
+    Container(backup, "Backup service", "Backup service", "")  
+}
+
+
+'ref
+user --> spaFront : "HTTPS"
+spaFront --> back : "HTTPS/REST"
+back -right-> db : "System calls"
+
+zabbixAgent -> spaFront : "TCP/IP"
+zabbixAgent -> back : "TCP/IP"
+
+backup -up-> db : TCP/IP
+zabbixServ -up-> zabbixAgent : TCP/IP
+
+@enduml
