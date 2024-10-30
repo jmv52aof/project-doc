@@ -1,40 +1,41 @@
-@startuml Диаграмма контейнеров
-title "C4. Контейнеры"
-
-!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+@startuml
+!define C4P https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
 !$ICONURL = "https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v3.0.0/icons"
 !include $ICONURL/common.puml
 !include $ICONURL/devicons/react.puml
 !include $ICONURL/devicons/php.puml
-!include $ICONURL/devicons2/sqlite.puml
+!include $ICONURL/devicons/java.puml
+!include $ICONURL/devicons/postgresql.puml
+!include $ICONURL/devicons/react.puml
+!includeurl C4P/C4_Container.puml
 
-Person(reader, "Читатель", "Просматр каталога и поиск в нем книг, бронирование книги")
-Person(librarin, "Библиотекарь", "Учет новых поступлений книг, выдача книг читателям, прием возвращенных книг, учет штрафов за просроченный возврат")
-Person(admin, "Администратор", "Управление учетными записями пользователей, настройка системы, анализ данных о посещениях и выданных книгах.")
+Person(admin, "Администратор", "Мониторинг состояния парковки, управление тарифами, просмотр статистики и отчетов")
+Person(operator, "Оператор", "Управление данными пользователей, обработка жалоб и обращений, техническая поддержка.")
+Person(driver, "Водитель", "Поиск свободных мест, бронирование места, оплата парковки, контроль оставшегося времени")
 
-System_Boundary(libAcc, "Система учета библиотеки") {
-    Container(front, "Веб интерфэйс", "SPA на ReactJS", $sprite="react")
-    Rel(reader, front, "Посещает", "HTTP/TCP")
-    Rel(librarin, front, "Посещает", "HTTP/TCP")
-    Rel(admin, front, "Посещает", "HTTP/TCP")
-
-    Container(backend, "API", "PHP 8.2", $sprite="php")
-    Rel(front, backend, "API вызовы", "HTTPS/REST")
-
-    Container(db, "БД", "SQLite", $sprite="sqlite")
-    Rel(backend, db, "Чтение/запись", "SQL")
-
-    Container(monitor, "Сервис мониторинга","Zabbix")
-    Rel(monitor, backend, "Проверяет состояние", "TCP")
-
-    Container(backup, "Сервис резервного копирования","SQLite .backup")
-    Rel(backup, db, "Создает бэкапы", "TCP")
+System_Boundary(delivery_service, "Сервис парковок") {
+    Container(web_app, "Мультистраничное Web-приложение", "Java, Spring Boot", "", $sprite="java")
+    Container(mobile_app, "Мобильное приложение", "React Native", "", $sprite="react")
+    Container(api_app, "API приложение", "Java, Spring Boot", "", $sprite="java")
+    Container(database, "Database", "PostgreSQL", "", $sprite="postgresql")
 }
+System_Ext(maps_service, "Сервис карт", "Я.Карты Maps API", "")
+System_Ext(geocoder_service, "Геокодер", "Я.Карты Geocoder API", "")
+System_Ext(payment_system, "Платёжная система", "Монета API", "")
+System_Ext(email_service, "Почтовая служба", "[Mailcow]", "")
 
-System_Ext(email, "Email сервис", "отправка уведомлений")
-Rel(monitor, email, "Уведомления администратору об ошибках", "SMTP + TLS")
-Rel(backend, email, "Уведомления читателям об истечении сроков", "SMTP + TLS")
-Rel(email, reader, "Уведомления читателям об истечении сроков", "SMTP + TLS")
-Rel(email, admin, "Уведомления администратору об ошибках", "SMTP + TLS")
+Rel(admin, web_app, "Посещает", "HTTP")
+Rel(operator, web_app, "Посещает", "HTTP")
+Rel(driver, mobile_app, "Посещает", "HTTP")
+Rel(api_app, email_service, "Отправляет уведомление", "REST API")
+Rel(api_app, geocoder_service, "Запрашивает данные по местоположению", "REST API")
+Rel(api_app, payment_system, "Обрабатывает платежи", "REST API")
+Rel(web_app, api_app, "API вызовы", "REST API")
+Rel(mobile_app, api_app, "API вызовы", "REST API")
+Rel(web_app, maps_service, "Получает данные по карте", "REST API")
+Rel(mobile_app, maps_service, "Получает данные по карте", "REST API")
+Rel(api_app, maps_service, "Запрашивает ограниченный токен для отображения карты", "REST API")
+Rel(api_app, database, "Читает/Пишет данные", "JDBC")
+Rel(web_app, database, "Читает/Пишет данные", "JDBC")
 
 @enduml
