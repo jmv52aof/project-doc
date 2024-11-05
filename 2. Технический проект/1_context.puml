@@ -22,3 +22,5 @@ maps --> parkingSystem
 geocoder --> parkingSystem
 paymentSystem --> parkingSystem
 @enduml
+
+Должен получиться гамбургер. Сверху вниз
