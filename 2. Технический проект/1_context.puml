@@ -8,19 +8,17 @@ Person(operator, "Оператор", "Управляют данными поль
 Person(admin, "Администратор", "Управление учетными записями пользователей, настройка системы, анализ данных о посещениях и выданных книгах.")
 
 System(parkingSystem, "Система парковок")
-driver <--- parkingSystem
-operator <--- parkingSystem
-admin <--- parkingSystem
+driver ---> parkingSystem
+operator ---> parkingSystem
+admin ---> parkingSystem
 
 System_Ext(email, "Email сервис", "отправка уведомлений")
 System_Ext(maps, "Провайдер карт", "Предоставление ближайшего маршрута, карт")
 System_Ext(geocoder, "Геокодер", "Предоставление адреса по координатам, и наоборот")
 System_Ext(paymentSystem, "Платёжная система", "Предоставление возможности оплаты и рекуррентных платежей")
 
-email --> parkingSystem
-maps --> parkingSystem
-geocoder --> parkingSystem
-paymentSystem --> parkingSystem
+parkingSystem --> email
+parkingSystem --> maps
+parkingSystem --> geocoder
+parkingSystem --> paymentSystem
 @enduml
-
-Должен получиться гамбургер. Сверху вниз
