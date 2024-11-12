@@ -8,7 +8,7 @@ title "C4. Компоненты"
 !include $ICONURL/devicons/php.puml
 !include $ICONURL/devicons2/sqlite.puml
 
-Component(tariffMicroservice, "Микросервис тарификации и оплаты", "Java Spring", $sprite="react")
+Component(tariffMicroservice, "Микросервис тарификации и оплаты", "Java Spring", $sprite="")
 
 
 System_Boundary(libAcc, "API") {
