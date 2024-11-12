@@ -1,0 +1,15 @@
+stateDiagram-v2
+    [*] --> Pending : Начала без бронирования
+    [*] --> Reservation  : Начало через бронирование
+    Reservation --> Pending : Выполнить попытку перейти в активное состояние
+    Reservation --> Canceled : Отмена бронирования
+    Canceled --> [*]
+    Pending --> Invalid : Ошибка при проверке возможности парковки
+    Pending --> Payment
+    Payment --> Invalid : Ошибка при автоматическом списании средств
+    Payment --> Active
+    Active --> Completed
+    Payment --> Canceled : Ручная отмена парковки
+    Active --> Canceled : Отмена текущей сессии
+    Invalid --> [*]
+    Completed --> [*]
