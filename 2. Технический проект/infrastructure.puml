@@ -1,43 +1,126 @@
-@startuml Система учета библиотеки. Диаграмма infrastructure
-' C4
-!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+@startuml
+!define C4P https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
+!includeurl C4P/C4_Container.puml
 
-'
-title "Система учета библиотеки. Диаграмма инфраструктуры"
+title C4 Infrastructure Diagram - Сервис парковки с шардингом и репликацией
 
-'
-Person(user, "Пользователь")
-
-package "Основной сервер" { 
-    Container(zabbixAgent, "Мониторинг", "Zabbix-агент", "")  
-
-    package "Doker-compose" { 
-        package "Doker-контейнер front" {  
-            Container(spaFront, "Front spa", "React", "")  
+package "Яндекс.Облако" as cloud {
+    package "Kubernetes Cluster" as k8s_cluster {
+        package "Auth Pod" as auth_pod {
+            Container(auth_service, "Auth Service", "Java, Spring Boot", "Шлюз авторизации и аутентификации")
         }
 
-        package "Doker-контейнер back" { 
-            Container(back, "api aplication ", "php", "")
-            Container(db, "Database", "SQLite")
+        package "Parking Pod" as parking_pod {
+            Container(parking_service, "Parking Service", "Java, Spring Boot", "Управление парковками")
         }
+
+        package "Search Pod" as search_pod {
+            Container(search_service, "Search Service", "Java, Spring Boot", "Сервис поиска и маршрутизации")
+        }
+
+        package "Payment Pod" as payment_pod {
+            Container(payment_service, "Payment Service", "Java, Spring Boot", "Сервис оплаты и тарификации")
+        }
+
+        package "Notification Pod" as notification_pod {
+            Container(notification_service, "Notification Service", "Java, Spring Boot", "Сервис уведомлений")
+        }
+
+        package "Support Pod" as support_pod {
+            Container(support_service, "Support Service", "Java, Spring Boot", "Сервис техподдержки")
+        }
+
+        package "Report Pod" as report_pod {
+            Container(report_service, "Report Service", "Java, Spring Boot", "Сервис отчетов и аналитики")
+        }
+
+        package "User Pod" as user_pod {
+            Container(user_service, "User Service", "Java, Spring Boot", "Сервис управления пользователями")
+        }
+
+        package "Session Pod" as session_pod {
+            Container(session_service, "Session Service", "Java, Spring Boot", "Сервис сессий")
+        }
+
+        package "Session Pod" as session_pod {
+            Container(session_service, "Session Service", "Java, Spring Boot", "Сервис сессий")
+        }
+        
+        Container(nginx, "Nginx", "Nginx", "Обратный прокси и балансировщик нагрузки")
+
+        Container(kafka, "Брокер сообщений", "Apache Kafka", "Асинхронная обработка событий между сервисами")
     }
 }
 
-package "Вспомогательный сервер" { 
-    Container(zabbixServ, "Мониторинг", "Zabbix-сервер", "")  
-    Container(backup, "Backup service", "Backup service", "")  
+package "Database Server" {
+    package "Region 1" as region1 {
+        Container(database_r1_master, "PostgreSQL Master", "PostgreSQL", "Основная база данных для региона 1")
+        Container(database_r1_replica, "PostgreSQL Replica", "PostgreSQL", "Реплика базы данных для региона 1")
+    }
+    note right of region1: На каждый регион по блоку (См. ADR 2024-10.10 - Выбор способа масштабирования)
 }
 
+System_Ext(maps_service, "Сервис карт", "Я.Карты Maps API")
+System_Ext(geocoder_service, "Геокодер", "Я.Карты Geocoder API")
+System_Ext(payment_system, "Платёжная система", "Монета API")
+System_Ext(email_service, "Почтовая служба", "[Mailcow]")
 
-'ref
-user --> spaFront : "HTTPS"
-spaFront --> back : "HTTPS/REST"
-back -right-> db : "System calls"
+' Соединения между сервисами и базами данных в каждом регионе
+Rel(auth_service, database_r1_master, "Чтение/Запись", "JDBC")
+Rel(parking_service, database_r1_master, "Чтение/Запись", "JDBC")
+Rel(search_service, database_r1_master, "Чтение/Запись", "JDBC")
+Rel(payment_service, database_r1_master, "Чтение/Запись", "JDBC")
+Rel(notification_service, database_r1_master, "Чтение/Запись", "JDBC")
+Rel(report_service, database_r1_master, "Чтение/Запись", "JDBC")
+Rel(user_service, database_r1_master, "Чтение/Запись", "JDBC")
+Rel(session_service, database_r1_master, "Чтение/Запись", "JDBC")
+Rel(kafka, database_r1_master, "Чтение/Запись", "JDBC")
 
-zabbixAgent -> spaFront : "TCP/IP"
-zabbixAgent -> back : "TCP/IP"
+' Соединения между мастерами и репликами для репликации данных
+Rel_D(database_r1_master, database_r1_replica, "Репликация", "Streaming")
 
-backup -up-> db : TCP/IP
-zabbixServ -up-> zabbixAgent : TCP/IP
+' Взаимодействие с внешними системами
+Rel(parking_service, geocoder_service, "Запрос данных по адресу парковки", "REST API")
+Rel(search_service, maps_service, "Запрос карт и маршрутов", "REST API")
+Rel(payment_service, payment_system, "Запрос обработки платежей", "REST API")
+Rel(notification_service, email_service, "Отправка уведомлений", "REST API")
 
+' Соединение Nginx с сервисами
+Rel(nginx, auth, "")
+' Соединение Nginx с сервисами
+Rel(nginx, auth_service, "Проксирование запросов", "HTTP")
+Rel(nginx, parking_service, "Проксирование запросов", "HTTP")
+Rel(nginx, search_service, "Проксирование запросов", "HTTP")
+Rel(nginx, payment_service, "Проксирование запросов", "HTTP")
+Rel(nginx, notification_service, "Проксирование запросов", "HTTP")
+Rel(nginx, report_service, "Проксирование запросов", "HTTP")
+Rel(nginx, user_service, "Проксирование запросов", "HTTP")
+Rel(nginx, session_service, "Проксирование запросов", "HTTP")
+Rel(nginx, support_pod, "Проксирование запросов", "HTTP")
+
+Rel(auth_service, kafka, "Публикация событий о авторизациях", "Kafka Producer API")
+Rel(parking_service, kafka, "Публикация событий о парковках", "Kafka Producer API")
+Rel(search_service, kafka, "Публикация событий о поиске", "Kafka Producer API")
+Rel(payment_service, kafka, "Публикация событий о платеже", "Kafka Producer API")
+Rel(notification_service, kafka, "Публикация событий о уведомлениях", "Kafka Producer API")
+Rel(report_service, kafka, "Публикация событий о отчетах", "Kafka Producer API")
+Rel(user_service, kafka, "Публикация событий о пользователях", "Kafka Producer API")
+Rel(session_service, kafka, "Публикация событий о сессиях", "Kafka Producer API")
+Rel(support_pod, kafka, "Публикация событий о техподдержке", "Kafka Producer API")
+
+auth_service ---[hidden]----> database_r1_master
+parking_service ----[hidden]----> database_r1_master
+search_service ----[hidden]----> database_r1_master
+payment_service ----[hidden]----> database_r1_master
+notification_service ----[hidden]----> database_r1_master
+report_service ----[hidden]----> database_r1_master
+user_service ----[hidden]----> database_r1_master
+session_service ----[hidden]----> database_r1_master
+support_pod ----[hidden]----> database_r1_master
+kafka ----[hidden]----> database_r1_master
+
+parking_service ---[hidden]---> geocoder_service
+search_service ---[hidden]---> maps_service
+payment_service ---[hidden]---> payment_system
+auth_service ---[hidden]---> email_service
 @enduml
