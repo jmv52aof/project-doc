@@ -1,0 +1,37 @@
+# Node modules (if using Node.js for documentation generation)
+node_modules/
+
+.obsidian
+
+# Build output
+dist/
+build/
+
+# VSCode settings
+.vscode/
+*.code-workspace
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Markdown specific
+*.pdf
+*.html
+*.epub
+*.docx
+
+# Ignore any other files that are not part of the documentation
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace

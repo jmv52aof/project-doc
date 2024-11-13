@@ -1,41 +1,48 @@
-@startuml истема учета библиотеки. Maintenance
+@startuml
 
-'left to right direction	
-top to bottom direction
-
-package "Development" {
-    [Developer]
-    [Code VCS]
-    [Developer] --> [Code VCS]: "commit" 
-
-    [CI]
-    [Code VCS] --> [CI]: "test & build"
-
-    [CD]
-    [CI] --> [CD]
-    [CI] --> [Code VCS]: "merge to master"
+package "Яндекс.Облако Kubernetes" as k8s {
+  [Docker] as docker << (C, #FFAAAA) >>
+  [Containers] as containers << (C, #FFAAAA) >>
 }
 
-
-package "Docker compose" {  
-    [Docker]
-    [Containers] 
-}
-[Docker] --> [Code VCS]: "pull main"
-[Docker] --> [Containers]: "build and deploy" 
-[CD] --> [Docker]: "deploy" 
-
-package "External Services" {
-    [Mailing Service]
+package "Сервис парковки - обслуживание" as maintenance {
+    actor "Системный администратор" as sys_admin
+    package "Яндекс.Облако" as cloud {
+      [Система мониторинга Zabbix] as monitoring_service << (C, #FFAAAA) >>
+      [Система бэкапов] as backup_service << (C, #FFAAAA) >>
+    }
 }
 
-package "Monitoring and backup" {
-    [Zabbix]
-    [Zabbix] --> [Containers]: "check status" 
-    [Zabbix] --> [Mailing Service]: "sends notifications" 
-    [backup service]
-    [backup service] --> [Containers]: "create backups" 
+package "Внешние сервисы" as outer_services {
+    package "Канал уведомлений" as notifications {
+        [Почтовый шлюз] as email_service << (C, #FFAAAA) >>
+    }
 }
 
+package "Разработка" as development {
+    actor "Разработчик" as developer
+    [Система контроля версий (Git GitLab)] as vcs << (C, #FFAAAA) >>
+    [CI/CD Gitlab] as cicd << (C, #FFAAAA) >>
+    package "CI/CD Pipeline" as build {
+      [Build Stage] as buildstage << (C, #FFAAAA) >>
+      [Testing Stage] as testingstage << (C, #FFAAAA) >>
+    }
+    [Реестр контейнеров Gitlab] as containeregistry << (C, #FFAAAA) >>
+}
+
+sys_admin --> monitoring_service : "Мониторинг состояния системы"
+sys_admin --> backup_service : "Контроль и восстановление образов"
+monitoring_service --> email_service : "Отправка уведомлений об ошибках и предупреждения"
+developer --> vcs : "PUSH Коммитов"
+vcs --> cicd : "Вызов CI/CD"
+cicd --> buildstage : "Обработка в CI/CD pipeline"
+buildstage --> containeregistry : "Сборка образа Docker и PUSH"
+containeregistry <-- testingstage : "PULL образа Docker"
+buildstage --> testingstage : "PASS"
+testingstage --> docker : "Запрос на обновление через PULL [SSH]"
+docker --> containeregistry : "PULL образа Docker"
+docker --> containers : "Обновление и развёртка\nкотнейнеров и их копий"
+monitoring_service --> containers : "Проверка состояния"
+backup_service --> containers : "Создание бэкапов и воостановление из бэкапов"
 
 @enduml

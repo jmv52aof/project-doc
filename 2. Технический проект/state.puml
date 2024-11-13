@@ -1,15 +1,19 @@
-stateDiagram-v2
-    [*] --> Pending : Начала без бронирования
-    [*] --> Reservation  : Начало через бронирование
-    Reservation --> Pending : Выполнить попытку перейти в активное состояние
-    Reservation --> Canceled : Отмена бронирования
-    Canceled --> [*]
-    Pending --> Invalid : Ошибка при проверке возможности парковки
-    Pending --> Payment
-    Payment --> Invalid : Ошибка при автоматическом списании средств
-    Payment --> Active
-    Active --> Completed
-    Payment --> Canceled : Ручная отмена парковки
-    Active --> Canceled : Отмена текущей сессии
-    Invalid --> [*]
-    Completed --> [*]
+@startuml
+  top to bottom direction
+  hide empty description
+  skinparam nodesep 65
+  [*] --> Pending : Начало без бронирования
+  [*] --> Reservation  : \n\nНачало через бронирование
+  Reservation --> Pending : Началось время бронирования
+  Reservation --> Canceled : Отмена бронирования
+  Canceled --> [*]
+  Pending --> Invalid : Ошибка при проверке\nвозможности парковки
+  Pending --> Payment : Пройдены проверки\nна возможность начала парковки
+  Payment --> Invalid : Истекло время на оплату
+  Payment --> Active : Совершена успешная оплата
+  Active --> Completed : Истекло время парковки
+  Payment --> Canceled : Ручная отмена оплаты
+  Active --> Canceled : Ручная отмена парковки
+  Invalid --> [*]
+  Completed --> [*]
+@enduml
