@@ -1,5 +1,4 @@
 @startuml
-
 !define C4P https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
 !$ICONURL = "https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v3.0.0/icons"
 !include $ICONURL/devicons/react.puml
@@ -16,15 +15,20 @@ Person(driver, "Водитель", "Поиск свободных мест, бр
 System_Boundary(delivery_service, "Сервис парковок") {
     Container(web_app, "Мультистраничное Web-приложение", "Java, Spring Boot", "", $sprite="java")
     Container(mobile_app, "Мобильное приложение", "React Native", "", $sprite="react")
-    Container(auth_service, "Шлюз авторизации и аутентификации", "Java, Spring Boot", "", $sprite="java")
-    Container(parking_service, "Сервис парковочных мест", "Java, Spring Boot", "", $sprite="java")
-    Container(search_service, "Сервис поиска и маршрутизации", "Java, Spring Boot", "", $sprite="java")
-    Container(notification_service, "Сервис уведомлений", "Java, Spring Boot", "", $sprite="java")
-    Container(support_service, "Сервис техподдержки", "Java, Spring Boot", "", $sprite="java")
-    Container(payment_service, "Сервис оплаты и тарификации", "Java, Spring Boot", "", $sprite="java")
-    Container(report_service, "Сервис отчётов и аналитики", "Java, Spring Boot", "", $sprite="java")
-    Container(user_service, "Сервис пользователей", "Java, Spring Boot", "", $sprite="java")
-    Container(session_service, "Сервис сессий", "Java, Spring Boot", "", $sprite="java")
+
+    System_Boundary(services, "Сервисы") {
+        Container(auth_service, "Шлюз авторизации и аутентификации", "Java, Spring Boot", "", $sprite="java")
+        Container(parking_service, "Сервис парковочных мест", "Java, Spring Boot", "", $sprite="java")
+        Container(search_service, "Сервис поиска и маршрутизации", "Java, Spring Boot", "", $sprite="java")
+        Container(notification_service, "Сервис уведомлений", "Java, Spring Boot", "", $sprite="java")
+        Container(support_service, "Сервис техподдержки", "Java, Spring Boot", "", $sprite="java")
+        Container(payment_service, "Сервис оплаты и тарификации", "Java, Spring Boot", "", $sprite="java")
+        Container(report_service, "Сервис отчётов и аналитики", "Java, Spring Boot", "", $sprite="java")
+        Container(user_service, "Сервис пользователей", "Java, Spring Boot", "", $sprite="java")
+        Container(session_service, "Сервис сессий", "Java, Spring Boot", "", $sprite="java")
+    }
+
+    Container(kafka, "Брокер сообщений", "Kafka")
     Container(database, "База данных", "PostgreSQL", "", $sprite="postgresql")
     Container(monitoring, "Система мониторинга")
 }
@@ -33,40 +37,21 @@ System_Ext(geocoder_service, "Геокодер", "Я.Карты Geocoder API", "
 System_Ext(payment_system, "Платёжная система", "Монета API", "")
 System_Ext(email_service, "Почтовая служба", "[Mailcow]", "")
 
-Rel(web_app, auth_service, "API вызовы", "REST API")
-Rel(mobile_app, auth_service, "API вызовы", "REST API")
-
-Rel(auth_service, user_service, "API вызовы", "REST API")
-Rel(auth_service, parking_service, "API вызовы", "REST API")
-Rel(auth_service, search_service, "API вызовы", "REST API")
-Rel(auth_service, payment_service, "API вызовы", "REST API")
-Rel(auth_service, notification_service, "API вызовы", "REST API")
-Rel(auth_service, report_service, "API вызовы", "REST API")
-Rel(auth_service, support_service, "API вызовы", "REST API")
-Rel(auth_service, session_service, "API вызовы", "REST API")
-
-Rel(notification_service, email_service, "API вызовы", "REST API")
-Rel(auth_service, email_service, "API вызовы", "REST API")
-Rel(payment_service, notification_service, "API вызовы", "REST API")
-Rel(parking_service, notification_service, "API вызовы", "REST API")
-Rel(support_service, notification_service, "API вызовы", "REST API")
-Rel(session_service, payment_service, "API вызовы", "REST API")
-Rel(session_service, notification_service, "API вызовы", "REST API")
-
 Rel(admin, web_app, "Посещает", "HTTP")
 Rel(operator, web_app, "Посещает", "HTTP")
 Rel(driver, mobile_app, "Посещает", "HTTP")
-Rel(web_app, maps_service, "Получает данные по карте", "REST API")
-web_app ----[hidden]----> maps_service
-Rel(mobile_app, maps_service, "Получает данные по карте", "REST API")
-Rel(auth_service, database, "Читает/Пишет данные", "JDBC")
-Rel(user_service, database, "Читает/Пишет данные", "JDBC")
-Rel(parking_service, database, "Читает/Пишет данные", "JDBC")
-Rel(search_service, database, "Читает/Пишет данные", "JDBC")
-Rel(payment_service, database, "Читает/Пишет данные", "JDBC")
-Rel(notification_service, database, "Читает/Пишет данные", "JDBC")
-Rel(report_service, database, "Читает/Пишет данные", "JDBC")
-Rel(support_service, database, "Читает/Пишет данные", "JDBC")
+web_app ---[hidden]---> maps_service
+
+Rel(services, database, "Читает/Пишет данные", "JDBC")
+Rel(services, kafka, "Создает/Читает события")
+Rel(services, monitoring, "Отправляет статусы")
+
+services --[hidden]---> database
+services --[hidden]---> kafka
+
+Rel(web_app, services, "Создает/Читает события")
+Rel(mobile_app, services, "Создает/Читает события")
+
 
 Rel(parking_service, geocoder_service, "Получает данные по адресу парковки", "REST API")
 parking_service --[hidden]---> geocoder_service
@@ -76,8 +61,5 @@ parking_service --[hidden]---> payment_system
 
 
 Rel(monitoring, email_service, "API вызовы", "REST API")
-monitoring ----[hidden]----> email_service
-Rel(monitoring, auth_service, "Проверяет состояние", "REST API")
-
-
+monitoring ---[hidden]--> email_service
 @enduml
