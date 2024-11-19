@@ -1,4 +1,5 @@
 @startuml
+!theme vibrant
 
 package "Яндекс.Облако Kubernetes" as k8s {
   [Docker] as docker << (C, #FFAAAA) >>
@@ -22,10 +23,15 @@ package "Внешние сервисы" as outer_services {
 package "Разработка" as development {
     actor "Разработчик" as developer
     [Система контроля версий (Git GitLab)] as vcs << (C, #FFAAAA) >>
-    [CI/CD Gitlab] as cicd << (C, #FFAAAA) >>
-    package "CI/CD Pipeline" as build {
+    [CI/CD Gitlab (Ветка main)] as cicd << (C, #FFAAAA) >>
+    [CI/CD Gitlab (Ветка dev)] as cicdtest << (C, #FFAAAA) >>
+    package "CI/CD Pipeline (PROD)" as build {
       [Build Stage] as buildstage << (C, #FFAAAA) >>
       [Testing Stage] as testingstage << (C, #FFAAAA) >>
+    }
+    package "CI/CD Pipeline (TEST)" as buildtest {
+      [Build Stage Test] as buildstagetest << (C, #FFAAAA) >>
+      [Testing Stage Test] as testingstagetest << (C, #FFAAAA) >>
     }
     [Реестр контейнеров Gitlab] as containeregistry << (C, #FFAAAA) >>
 }
@@ -34,15 +40,20 @@ sys_admin --> monitoring_service : "Мониторинг состояния си
 sys_admin --> backup_service : "Контроль и восстановление образов"
 monitoring_service --> email_service : "Отправка уведомлений об ошибках и предупреждения"
 developer --> vcs : "PUSH Коммитов"
-vcs --> cicd : "Вызов CI/CD"
+vcs --> cicd : "Вызов CI/CD для PROD окружения"
+vcs --> cicdtest : "Вызов CI/CD для dev окружения"
 cicd --> buildstage : "Обработка в CI/CD pipeline"
+cicdtest --> buildstagetest : "Обработка в CI/CD pipeline"
 buildstage --> containeregistry : "Сборка образа Docker и PUSH"
+buildstagetest --> containeregistry : "Сборка образа Docker и PUSH"
 containeregistry <-- testingstage : "PULL образа Docker"
+containeregistry <-- testingstagetest : "PULL образа Docker"
 buildstage --> testingstage : "PASS"
-testingstage --> docker : "Запрос на обновление через PULL [SSH]"
+buildstagetest --> testingstagetest : "PASS"
+testingstage --> docker : "Запрос на обновление через PULL [SSH] (Тэг main)"
+testingstagetest --> docker : "Запрос на обновление через PULL [SSH] (Тэг dev)"
 docker --> containeregistry : "PULL образа Docker"
 docker --> containers : "Обновление и развёртка\nкотнейнеров и их копий"
 monitoring_service --> containers : "Проверка состояния"
 backup_service --> containers : "Создание бэкапов и воостановление из бэкапов"
-
 @enduml
