@@ -5,6 +5,8 @@
 title C4 Infrastructure Diagram - Сервис парковки с шардингом и репликацией
 
 package "Яндекс.Облако" as cloud {
+    Container(nginx, "Nginx", "Nginx", "Обратный прокси и балансировщик нагрузки")
+
     package "Kubernetes Cluster" as k8s_cluster {
         package "Auth Pod" as auth_pod {
             Container(auth_service, "Auth Service", "Java, Spring Boot", "Шлюз авторизации и аутентификации")
@@ -45,19 +47,21 @@ package "Яндекс.Облако" as cloud {
         package "Session Pod" as session_pod {
             Container(session_service, "Session Service", "Java, Spring Boot", "Сервис сессий")
         }
-        
-        Container(nginx, "Nginx", "Nginx", "Обратный прокси и балансировщик нагрузки")
-
-        Container(kafka, "Брокер сообщений", "Apache Kafka", "Асинхронная обработка событий между сервисами")
     }
+
+    Container(kafka, "Брокер сообщений", "Apache Kafka", "Асинхронная обработка событий между сервисами")
 }
 
-package "Database Server" {
+package "Database Server" as database {
     package "Region 1" as region1 {
         Container(database_r1_master, "PostgreSQL Master", "PostgreSQL", "Основная база данных для региона 1")
         Container(database_r1_replica, "PostgreSQL Replica", "PostgreSQL", "Реплика базы данных для региона 1")
     }
-    note right of region1: На каждый регион по блоку (См. ADR 2024-10.10 - Выбор способа масштабирования)
+
+    package "Region n" as regionn {
+        Container(database_rn_master, "PostgreSQL Master", "PostgreSQL", "Основная база данных для региона n")
+        Container(database_rn_replica, "PostgreSQL Replica", "PostgreSQL", "Реплика базы данных для региона n")
+    }
 }
 
 System_Ext(maps_service, "Сервис карт", "Я.Карты Maps API")
@@ -66,18 +70,11 @@ System_Ext(payment_system, "Платёжная система", "Монета AP
 System_Ext(email_service, "Почтовая служба", "[Mailcow]")
 
 ' Соединения между сервисами и базами данных в каждом регионе
-Rel(auth_service, database_r1_master, "Чтение/Запись", "JDBC")
-Rel(parking_service, database_r1_master, "Чтение/Запись", "JDBC")
-Rel(search_service, database_r1_master, "Чтение/Запись", "JDBC")
-Rel(payment_service, database_r1_master, "Чтение/Запись", "JDBC")
-Rel(notification_service, database_r1_master, "Чтение/Запись", "JDBC")
-Rel(report_service, database_r1_master, "Чтение/Запись", "JDBC")
-Rel(user_service, database_r1_master, "Чтение/Запись", "JDBC")
-Rel(session_service, database_r1_master, "Чтение/Запись", "JDBC")
-Rel(kafka, database_r1_master, "Чтение/Запись", "JDBC")
+Rel(k8s_cluster, database , "Чтение/Запись", "JDBC")
 
 ' Соединения между мастерами и репликами для репликации данных
 Rel_D(database_r1_master, database_r1_replica, "Репликация", "Streaming")
+Rel_D(database_rn_master, database_rn_replica, "Репликация", "Streaming")
 
 ' Взаимодействие с внешними системами
 Rel(parking_service, geocoder_service, "Запрос данных по адресу парковки", "REST API")
@@ -86,39 +83,11 @@ Rel(payment_service, payment_system, "Запрос обработки плате
 Rel(notification_service, email_service, "Отправка уведомлений", "REST API")
 
 ' Соединение Nginx с сервисами
-Rel(nginx, auth, "")
-' Соединение Nginx с сервисами
-Rel(nginx, auth_service, "Проксирование запросов", "HTTP")
-Rel(nginx, parking_service, "Проксирование запросов", "HTTP")
-Rel(nginx, search_service, "Проксирование запросов", "HTTP")
-Rel(nginx, payment_service, "Проксирование запросов", "HTTP")
-Rel(nginx, notification_service, "Проксирование запросов", "HTTP")
-Rel(nginx, report_service, "Проксирование запросов", "HTTP")
-Rel(nginx, user_service, "Проксирование запросов", "HTTP")
-Rel(nginx, session_service, "Проксирование запросов", "HTTP")
-Rel(nginx, support_pod, "Проксирование запросов", "HTTP")
+Rel(nginx, k8s_cluster, "Проксирование запросов", "HTTP")
 
-Rel(auth_service, kafka, "Публикация событий о авторизациях", "Kafka Producer API")
-Rel(parking_service, kafka, "Публикация событий о парковках", "Kafka Producer API")
-Rel(search_service, kafka, "Публикация событий о поиске", "Kafka Producer API")
-Rel(payment_service, kafka, "Публикация событий о платеже", "Kafka Producer API")
-Rel(notification_service, kafka, "Публикация событий о уведомлениях", "Kafka Producer API")
-Rel(report_service, kafka, "Публикация событий о отчетах", "Kafka Producer API")
-Rel(user_service, kafka, "Публикация событий о пользователях", "Kafka Producer API")
-Rel(session_service, kafka, "Публикация событий о сессиях", "Kafka Producer API")
-Rel(support_pod, kafka, "Публикация событий о техподдержке", "Kafka Producer API")
+Rel(k8s_cluster, kafka, "Публикация событий о авторизациях", "Kafka Producer API")
 
-auth_service ---[hidden]----> database_r1_master
-parking_service ----[hidden]----> database_r1_master
-search_service ----[hidden]----> database_r1_master
-payment_service ----[hidden]----> database_r1_master
-notification_service ----[hidden]----> database_r1_master
-report_service ----[hidden]----> database_r1_master
-user_service ----[hidden]----> database_r1_master
-session_service ----[hidden]----> database_r1_master
-support_pod ----[hidden]----> database_r1_master
-kafka ----[hidden]----> database_r1_master
-
+k8s_cluster ---[hidden]---> database
 parking_service ---[hidden]---> geocoder_service
 search_service ---[hidden]---> maps_service
 payment_service ---[hidden]---> payment_system
