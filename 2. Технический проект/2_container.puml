@@ -30,21 +30,18 @@ System_Boundary(delivery_service, "Сервис парковок") {
 
     Container(kafka, "Брокер сообщений", "Kafka")
     Container(database, "База данных", "PostgreSQL", "", $sprite="postgresql")
-    Container(monitoring, "Система мониторинга")
 }
 System_Ext(maps_service, "Сервис карт", "Я.Карты Maps API", "")
 System_Ext(geocoder_service, "Геокодер", "Я.Карты Geocoder API", "")
 System_Ext(payment_system, "Платёжная система", "Монета API", "")
-System_Ext(email_service, "Почтовая служба", "[Mailcow]", "")
 
 Rel(admin, web_app, "Посещает", "HTTP")
 Rel(operator, web_app, "Посещает", "HTTP")
 Rel(driver, mobile_app, "Посещает", "HTTP")
-web_app ---[hidden]---> maps_service
+web_app ----[hidden]---> maps_service
 
 Rel(services, database, "Читает/Пишет данные", "JDBC")
 Rel(services, kafka, "Создает/Читает события")
-Rel(services, monitoring, "Отправляет статусы")
 
 services --[hidden]---> database
 services --[hidden]---> kafka
@@ -54,12 +51,8 @@ Rel(mobile_app, services, "Создает/Читает события")
 
 
 Rel(parking_service, geocoder_service, "Получает данные по адресу парковки", "REST API")
-parking_service --[hidden]---> geocoder_service
+parking_service ---[hidden]---> geocoder_service
 Rel(search_service, maps_service, "Получает данные для отображения карты или маршрута", "REST API")
-Rel(parking_service, payment_system, "Производит оплату или получает данные для оплаты", "REST API")
-parking_service --[hidden]---> payment_system
-
-
-Rel(monitoring, email_service, "API вызовы", "REST API")
-monitoring ---[hidden]--> email_service
+Rel(payment_service, payment_system, "Производит оплату или получает данные для оплаты", "REST API")
+parking_service ---[hidden]---> payment_system
 @enduml
